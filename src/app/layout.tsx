@@ -25,9 +25,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
-        {children}
+        <div className="flex-1 flex">
+          <div className="w-full h-full flex justify-center items-center">
+            {children}
+          </div>
+          {/* Right side content */}
+        </div>
+        <footer>
+          {/* Footer content including "Alex Paden" */}
+        </footer>
       </body>
     </html>
   );

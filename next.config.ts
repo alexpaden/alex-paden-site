@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
+// Simplest possible config to avoid any overhead
 const nextConfig: NextConfig = {
-  /* config options here */
+  reactStrictMode: true
 };
 
 export default nextConfig;
