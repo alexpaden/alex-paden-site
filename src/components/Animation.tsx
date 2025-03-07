@@ -43,14 +43,14 @@ export default function Animation() {
   const [startTime, setStartTime] = useState(0);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
 
-  const duration = 3000; // Transition duration in ms
-  const cycleTime = 6000; // Time between shape cycles in ms
-  const swirlMag = 3.0; // Consistent swirl magnitude for smooth motion
+  const duration = 3500; // Transition duration in ms
+  const cycleTime = 4000; // Time between shape cycles in ms
+  const swirlMag = 10.0; // Consistent swirl magnitude for smooth motion
 
   // Load SVGs and initialize particles
   useEffect(() => {
     async function loadSvgs() {
-      const urls = ["/ap-logo.svg", "/writing-logo.svg", "/dev-logo.svg"];
+      const urls = ["/ap-logo.svg", "/writing-logo.svg", "/dev-logo.svg", "/racecar-logo.svg"];
       const shapeData = await Promise.all(urls.map(fetchAndParseSvg));
       setShapes(shapeData);
       if (shapeData.length > 0) {
