@@ -10,16 +10,14 @@ const Animation = dynamic(() => import('@/components/Animation'), {
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col md:flex-row w-full min-h-screen bg-white text-gray-900">
+    <main className="flex flex-col xl:flex-row w-full min-h-screen bg-white text-gray-900 overflow-visible">
       {/* Left Column */}
-      <div className="md:fixed md:w-1/4 md:h-screen flex flex-col justify-center items-center py-8 px-4 md:px-8 md:border-r md:border-gray-200">
-        <div className="w-full max-w-sm mx-auto flex flex-col items-center space-y-6">
-          {/* Logo area */}
-          <div className="w-full flex justify-center mb-4">
-            <div className="w-full max-w-[400px] flex justify-center">
-              <div className="w-[300px] h-[300px] translate-x-2">
-                <Animation />
-              </div>
+      <div className="xl:fixed xl:w-1/4 xl:h-screen flex flex-col justify-center items-center py-8 px-4 xl:px-8 xl:border-r xl:border-gray-200 transform xl:-translate-y-[15%] overflow-visible">
+        <div className="w-full max-w-sm mx-auto flex flex-col items-center space-y-6 overflow-visible">
+          {/* Logo area - removed fixed width/height constraints and added overflow-visible */}
+          <div className="flex justify-center mb-4 relative overflow-visible" style={{ width: '300px', height: '300px' }}>
+            <div className="w-full h-full overflow-visible absolute">
+              <Animation />
             </div>
           </div>
 
@@ -28,7 +26,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <p className="text-center text-gray-600 text-sm">
-            Hacking, writing, and sailing.
+            Hacking, writing, building.
           </p>
 
           {/* Social Links */}
@@ -65,10 +63,10 @@ export default function HomePage() {
       </div>
 
       {/* Spacer div for mobile layout */}
-      <div className="block md:hidden py-8"></div>
+      <div className="block xl:hidden py-8"></div>
 
       {/* Right Column */}
-      <div className="w-full md:w-3/4 md:ml-auto p-4 md:p-8">
+      <div className="w-full xl:w-3/4 xl:ml-auto p-4 xl:p-8">
         {/* Writing / Blog List */}
         <section className="mb-12">
           <h2 className="text-xl font-semibold mb-4">Writing</h2>
