@@ -72,7 +72,13 @@ export default function Animation() {
   // Load SVGs and initialize particles
   useEffect(() => {
     async function loadSvgs() {
-      const urls = ["/ap-logo.svg", "/writing-logo.svg", "/dev-logo.svg", "/racecar-logo.svg"];
+      const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+      const urls = [
+        `${basePath}/ap-logo.svg`,
+        `${basePath}/writing-logo.svg`,
+        `${basePath}/dev-logo.svg`,
+        `${basePath}/racecar-logo.svg`
+      ];
       const shapeData = await Promise.all(urls.map(fetchAndParseSvg));
       setShapes(shapeData);
       if (shapeData.length > 0) {
