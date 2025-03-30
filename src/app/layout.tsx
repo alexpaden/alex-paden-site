@@ -29,15 +29,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
         <ThemeProvider>
-          <div className="flex-1 flex">
-            <div className="w-full h-full flex justify-center items-center">
-              {children}
-            </div>
-            {/* Right side content */}
-          </div>
-          <footer>
-            {/* Footer content including "Alex Paden" */}
-          </footer>
+          {children}
         </ThemeProvider>
       </body>
     </html>
