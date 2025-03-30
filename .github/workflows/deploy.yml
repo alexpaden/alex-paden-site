@@ -24,14 +24,7 @@ jobs:
         run: yarn install --frozen-lockfile
         
       - name: Build
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            # For GitHub Pages subdirectory
-            yarn build:prod
-          else
-            # For custom domain
-            yarn build:custom
-          fi
+        run: yarn build:custom
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
