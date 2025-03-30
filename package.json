@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "build:prod": "NODE_ENV=production next build --config next.config.prod.ts",
+    "start": "npx serve@latest out -p 3001",
     "lint": "next lint"
-  },
+    },
   "dependencies": {
     "next": "15.2.1",
     "react": "^19.0.0",

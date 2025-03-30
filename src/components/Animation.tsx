@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useTheme } from '@/context/ThemeContext';
 
 interface Circle {
   cx: number;
@@ -42,10 +43,31 @@ export default function Animation() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const { theme } = useTheme();
 
   const duration = 3500; // Transition duration in ms
   const cycleTime = 4000; // Time between shape cycles in ms
   const swirlMag = 10.0; // Consistent swirl magnitude for smooth motion
+
+  const endTransition = useCallback(() => {
+    setIsTransitioning(false);
+    if (targetShapeIndex !== null) {
+      setCurrentShapeIndex(targetShapeIndex);
+      setTargetShapeIndex(null);
+    }
+    setParticles((old) =>
+      old.map((p) => ({
+        ...p,
+        x: p.targetX,
+        y: p.targetY,
+        r: p.targetR,
+        startX: p.targetX,
+        startY: p.targetY,
+        startR: p.targetR,
+        isStationary: true,
+      }))
+    );
+  }, [targetShapeIndex]);
 
   // Load SVGs and initialize particles
   useEffect(() => {
@@ -79,18 +101,43 @@ export default function Animation() {
     loadSvgs();
   }, []);
 
-  // Automatic shape cycling
-  useEffect(() => {
-    if (!shapes.length) return;
-    const timer = setInterval(() => {
-      const nextShapeIndex = (currentShapeIndex + 1) % shapes.length;
-      startTransition(nextShapeIndex);
-    }, cycleTime);
-    return () => clearInterval(timer);
-  }, [shapes, currentShapeIndex]);
+  // Create a moving particle with a converge-wait-diverge timeline
+  function createMovingParticle(p: Particle, tx: number, ty: number, tr: number, isSpawn: boolean): Particle {
+    const convergeStart = Math.random() * 0.2 * duration;
+    const convergeLen = randomRange(0.2, 0.4) * duration;
+    let convergeEnd = convergeStart + convergeLen;
+    if (convergeEnd > duration) convergeEnd = duration;
+    const waitLen = Math.random() * 0.1 * duration;
+    let waitEnd = convergeEnd + waitLen;
+    if (waitEnd > duration) waitEnd = duration;
+    const divergeLen = randomRange(0.2, 0.4) * duration;
+    let divergeEnd = waitEnd + divergeLen;
+    if (divergeEnd > duration) divergeEnd = duration;
+    const sx = isSpawn ? 0 : p.x;
+    const sy = isSpawn ? 0 : p.y;
+    const sr = isSpawn ? 0 : p.r;
+    return {
+      x: sx,
+      y: sy,
+      r: sr,
+      targetX: tx,
+      targetY: ty,
+      targetR: tr,
+      startX: sx,
+      startY: sy,
+      startR: sr,
+      isStationary: false,
+      convergeStart,
+      convergeEnd,
+      waitEnd,
+      divergeEnd,
+      swirlAngle: Math.random() * 2 * Math.PI,
+      swirlSpeed: 0.02 + Math.random() * 0.02,
+    };
+  }
 
   // Start a transition to a new shape
-  function startTransition(nextIndex: number) {
+  const startTransition = useCallback((nextIndex: number) => {
     if (!shapes[nextIndex]) return;
     const targetShape = shapes[nextIndex].circles;
     setIsTransitioning(true);
@@ -135,42 +182,16 @@ export default function Animation() {
       newParticles.push(spawnParticle);
     });
     setParticles(newParticles);
-  }
+  }, [shapes, particles, duration]);
 
-  // Create a moving particle with a converge-wait-diverge timeline
-  function createMovingParticle(p: Particle, tx: number, ty: number, tr: number, isSpawn: boolean): Particle {
-    const convergeStart = Math.random() * 0.2 * duration;
-    const convergeLen = randomRange(0.2, 0.4) * duration;
-    let convergeEnd = convergeStart + convergeLen;
-    if (convergeEnd > duration) convergeEnd = duration;
-    const waitLen = Math.random() * 0.1 * duration;
-    let waitEnd = convergeEnd + waitLen;
-    if (waitEnd > duration) waitEnd = duration;
-    const divergeLen = randomRange(0.2, 0.4) * duration;
-    let divergeEnd = waitEnd + divergeLen;
-    if (divergeEnd > duration) divergeEnd = duration;
-    const sx = isSpawn ? 0 : p.x;
-    const sy = isSpawn ? 0 : p.y;
-    const sr = isSpawn ? 0 : p.r;
-    return {
-      x: sx,
-      y: sy,
-      r: sr,
-      targetX: tx,
-      targetY: ty,
-      targetR: tr,
-      startX: sx,
-      startY: sy,
-      startR: sr,
-      isStationary: false,
-      convergeStart,
-      convergeEnd,
-      waitEnd,
-      divergeEnd,
-      swirlAngle: Math.random() * 2 * Math.PI,
-      swirlSpeed: 0.02 + Math.random() * 0.02,
-    };
-  }
+  useEffect(() => {
+    if (!shapes.length) return;
+    const timer = setInterval(() => {
+      const nextShapeIndex = (currentShapeIndex + 1) % shapes.length;
+      startTransition(nextShapeIndex);
+    }, cycleTime);
+    return () => clearInterval(timer);
+  }, [shapes, currentShapeIndex, startTransition, cycleTime, endTransition]);
 
   // Animation loop
   useEffect(() => {
@@ -181,10 +202,6 @@ export default function Animation() {
     const width = 300;
     const height = 300;
     
-    // Track mouse velocity for directional wind
-    let prevMousePos = mousePos;
-    let mouseVelocity = { x: 0, y: 0 };
-
     function calcScale(shape: ShapeData) {
       const { width: w, height: h } = shape;
       const scaleX = (width * 0.9) / w;
@@ -194,6 +211,7 @@ export default function Animation() {
 
     let reqId: number;
     function animate(frameTime: number) {
+      if (!ctx) return;
       ctx.clearRect(0, 0, width, height);
       const t = isTransitioning ? Math.min(frameTime - startTime, duration) : 0;
       if (isTransitioning && t >= duration && targetShapeIndex !== null) {
@@ -206,6 +224,10 @@ export default function Animation() {
       ctx.save();
       ctx.translate(width / 2, height / 2);
       ctx.scale(overallScale, overallScale);
+
+      // Determine particle color based on theme
+      const particleColor = theme === 'dark' ? 'white' : 'black';
+      const particleBlueHue = theme === 'dark' ? 190 : 210; // Slightly different blue for dark mode
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
@@ -322,11 +344,11 @@ export default function Animation() {
                 const glowRadius = pr * (2 + stretchFactor * 2);
                 const glow = ctx.createRadialGradient(px, py, 0, px, py, glowRadius);
                 
-                // Blue color scheme with pulse variation
-                let blueHue = 210 + pulse * 40; // 210-250 range (blue to purple-blue)
-                glow.addColorStop(0, `hsla(${blueHue}, 100%, 50%, ${glowIntensity})`);
-                glow.addColorStop(0.6, `hsla(${blueHue + 20}, 100%, 70%, ${glowIntensity * 0.5})`);
-                glow.addColorStop(1, `hsla(${blueHue - 10}, 100%, 40%, 0)`);
+                // Blue color scheme with pulse variation and theme-aware
+                const blueHue = particleBlueHue + pulse * 40; // themed base color with pulse variation
+                glow.addColorStop(0, `hsla(${blueHue}, 100%, ${theme === 'dark' ? '70%' : '50%'}, ${glowIntensity})`);
+                glow.addColorStop(0.6, `hsla(${blueHue + 20}, 100%, ${theme === 'dark' ? '80%' : '70%'}, ${glowIntensity * 0.5})`);
+                glow.addColorStop(1, `hsla(${blueHue - 10}, 100%, ${theme === 'dark' ? '50%' : '40%'}, 0)`);
                 
                 ctx.fillStyle = glow;
                 ctx.fillRect(px - glowRadius, py - glowRadius, glowRadius * 2, glowRadius * 2);
@@ -344,15 +366,17 @@ export default function Animation() {
                 ctx.beginPath();
                 ctx.arc(0, 0, pr, 0, 2 * Math.PI);
                 
-                // Apply color based on speed (blue for fast particles)
+                // Apply color based on speed and theme
                 const speedAlpha = Math.min(1, 0.4 + stretchFactor * 0.1);
                 if (stretchFactor > 3) {
-                  ctx.fillStyle = `rgba(100, 150, 255, ${speedAlpha})`;
+                  ctx.fillStyle = theme === 'dark' 
+                    ? `rgba(150, 200, 255, ${speedAlpha})` 
+                    : `rgba(100, 150, 255, ${speedAlpha})`;
                 } else {
-                  // Blend between black and blue based on stretch
+                  // Blend between theme color and blue based on stretch
                   const blendToBlue = (stretchFactor - 1.2) / 1.8; // 0 to 1
-                  const r = Math.floor(blendToBlue * 100);
-                  const g = Math.floor(blendToBlue * 150);
+                  const r = Math.floor(blendToBlue * (theme === 'dark' ? 150 : 100));
+                  const g = Math.floor(blendToBlue * (theme === 'dark' ? 200 : 150));
                   const b = Math.floor(blendToBlue * 255);
                   ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${speedAlpha})`;
                 }
@@ -371,11 +395,15 @@ export default function Animation() {
                       segOffset, 0
                     );
                     
-                    // Blue flame trail effect
+                    // Blue flame trail effect - theme aware
                     const opacity = (1 - seg/trailSegments) * glowIntensity * 0.7;
-                    trailGradient.addColorStop(0, `rgba(50, 100, 255, 0)`);
-                    trailGradient.addColorStop(0.4, `rgba(100, 150, 255, ${opacity * 0.3})`);
-                    trailGradient.addColorStop(1, `rgba(150, 200, 255, ${opacity})`);
+                    const baseR = theme === 'dark' ? 120 : 50;
+                    const baseG = theme === 'dark' ? 180 : 100;
+                    const baseB = theme === 'dark' ? 255 : 255;
+                    
+                    trailGradient.addColorStop(0, `rgba(${baseR}, ${baseG}, ${baseB}, 0)`);
+                    trailGradient.addColorStop(0.4, `rgba(${baseR + 30}, ${baseG + 30}, ${baseB}, ${opacity * 0.3})`);
+                    trailGradient.addColorStop(1, `rgba(${baseR + 50}, ${baseG + 50}, ${baseB}, ${opacity})`);
                     
                     ctx.fillStyle = trailGradient;
                     ctx.beginPath();
@@ -398,17 +426,25 @@ export default function Animation() {
                       ctx.rotate(sparkAngle);
                       ctx.translate(-sparkDist, 0);
                       
-                      // Spark glow
+                      // Spark glow - theme aware
                       const sparkGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, sparkSize * 3);
-                      sparkGlow.addColorStop(0, `rgba(200, 220, 255, ${0.7 * Math.random()})`);
-                      sparkGlow.addColorStop(1, 'rgba(100, 180, 255, 0)');
+                      sparkGlow.addColorStop(0, theme === 'dark' 
+                        ? `rgba(220, 240, 255, ${0.7 * Math.random()})` 
+                        : `rgba(200, 220, 255, ${0.7 * Math.random()})`
+                      );
+                      sparkGlow.addColorStop(1, theme === 'dark' 
+                        ? 'rgba(140, 200, 255, 0)' 
+                        : 'rgba(100, 180, 255, 0)'
+                      );
                       ctx.fillStyle = sparkGlow;
                       ctx.fillRect(-sparkSize * 3, -sparkSize * 3, sparkSize * 6, sparkSize * 6);
                       
                       // Spark core
                       ctx.beginPath();
                       ctx.arc(0, 0, sparkSize, 0, Math.PI * 2);
-                      ctx.fillStyle = 'rgba(220, 240, 255, 0.9)';
+                      ctx.fillStyle = theme === 'dark' 
+                        ? 'rgba(240, 250, 255, 0.9)' 
+                        : 'rgba(220, 240, 255, 0.9)';
                       ctx.fill();
                       ctx.restore();
                     }
@@ -417,8 +453,12 @@ export default function Animation() {
               } else {
                 // Regular circle for slow-moving particles with subtle blue hint
                 ctx.arc(0, 0, pr, 0, 2 * Math.PI);
-                const blueHint = influence * 0.3;
-                ctx.fillStyle = `rgba(${0}, ${0}, ${Math.floor(blueHint * 255)}, 1)`;
+                const blueHint = influence * (theme === 'dark' ? 0.5 : 0.3);
+                if (theme === 'dark') {
+                  ctx.fillStyle = `rgba(${Math.floor(blueHint * 100)}, ${Math.floor(blueHint * 200)}, ${Math.floor(blueHint * 255)}, 1)`;
+                } else {
+                  ctx.fillStyle = `rgba(${0}, ${0}, ${Math.floor(blueHint * 255)}, 1)`;
+                }
               }
               
               ctx.fill();
@@ -434,7 +474,7 @@ export default function Animation() {
         if (pr > 0.05) {
           ctx.beginPath();
           ctx.arc(px, py, pr, 0, 2 * Math.PI);
-          ctx.fillStyle = "black";
+          ctx.fillStyle = particleColor;
           ctx.fill();
         }
       }
@@ -463,27 +503,7 @@ export default function Animation() {
       canvas.removeEventListener("mouseleave", handleMouseLeave);
       cancelAnimationFrame(reqId);
     };
-  }, [particles, isTransitioning, startTime, shapes, currentShapeIndex, targetShapeIndex, mousePos]);
-
-  function endTransition() {
-    setIsTransitioning(false);
-    if (targetShapeIndex !== null) {
-      setCurrentShapeIndex(targetShapeIndex);
-      setTargetShapeIndex(null);
-    }
-    setParticles((old) =>
-      old.map((p) => ({
-        ...p,
-        x: p.targetX,
-        y: p.targetY,
-        r: p.targetR,
-        startX: p.targetX,
-        startY: p.targetY,
-        startR: p.targetR,
-        isStationary: true,
-      }))
-    );
-  }
+  }, [particles, isTransitioning, startTime, shapes, currentShapeIndex, targetShapeIndex, mousePos, theme]);
 
   return (
     <div className="w-full aspect-square max-w-[300px] mx-auto mb-4">
