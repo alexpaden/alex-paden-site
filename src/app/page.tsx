@@ -59,7 +59,7 @@ export default function HomePage() {
 
           {/* Tagline */}
           <p className={`text-center ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} text-sm`}>
-            Hacking, writing, building.
+            hacking, writing, building.
           </p>
 
           {/* Social Links */}

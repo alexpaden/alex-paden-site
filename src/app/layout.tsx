@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alex Paden - Hacking, Writing, Building",
+  title: "Alex Paden - hacking, writing, building",
   description: "Personal site of Alex Paden: projects, writing, and work.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
