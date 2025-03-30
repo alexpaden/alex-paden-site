@@ -207,10 +207,10 @@ const Timeline: React.FC = () => {
           href={item.link}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:underline'} flex items-center`}
+          className={`${theme === 'dark' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:underline'} whitespace-normal inline`}
         >
           {item.title}
-          {item.type !== 'work' && <span className="ml-1">↗</span>}
+          {item.type !== 'work' && <span className="text-sm"> ↗</span>}
         </Link>
       );
     }
@@ -301,11 +301,10 @@ const Timeline: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Timeline Content (2-column layout) */}
+      {/* Mobile Timeline Content (single-column layout) */}
       <div 
         ref={timelineRef}
-        className="relative grid gap-2 md:hidden"
-        style={{ gridTemplateColumns: 'minmax(120px, 1fr) 3fr' }}
+        className="relative flex flex-col gap-4 md:hidden"
       >
         {timelineItems.map((item, index) => {
           const currentYear = getYearFromSortDate(item.sortDate);
@@ -313,26 +312,32 @@ const Timeline: React.FC = () => {
           mobileLastYear = currentYear;
           
           return (
-            <React.Fragment key={index}>
-              {/* Combined Year/Date Column */}
-              <div className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} flex flex-col justify-center`}>
-                {showYear && <div className={theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}>{currentYear}</div>}
-                <div className="whitespace-normal break-words">
+            <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-b-0">
+              {/* Year display (when it changes) */}
+              {showYear && (
+                <div className={`mb-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} font-semibold`}>
+                  {currentYear}
+                </div>
+              )}
+              
+              {/* Date only */}
+              <div className="flex items-center mb-1">
+                <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} text-sm`}>
                   {item.date}
-                </div>
-              </div>
-
-              {/* Content Column */}
-              <div className="flex items-start gap-1.5">
-                <span className={`${getSymbolColorClass(item.type)} mt-1`}>
-                  {getIndicatorSymbol(item.type)}
                 </span>
-                <div className="flex-1">
-                  <div className="font-bold">{renderTitle(item)}</div>
-                  {renderDescription(item)}
-                </div>
               </div>
-            </React.Fragment>
+              
+              {/* Title with indicator and description */}
+              <div>
+                <div className="font-bold flex items-center gap-1.5">
+                  <span className={`${getSymbolColorClass(item.type)}`}>
+                    {getIndicatorSymbol(item.type)}
+                  </span>
+                  {renderTitle(item)}
+                </div>
+                {renderDescription(item)}
+              </div>
+            </div>
           );
         })}
       </div>
