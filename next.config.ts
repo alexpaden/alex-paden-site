@@ -7,9 +7,9 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Remove basePath and assetPrefix for local development
-  basePath: '',
-  assetPrefix: '',
+  // Use environment variable for basePath
+  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
+  assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH ? `${process.env.NEXT_PUBLIC_BASE_PATH}/` : '',
 };
 
 export default nextConfig;
