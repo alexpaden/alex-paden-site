@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:prod": "NODE_ENV=production NEXT_PUBLIC_BASE_PATH=/alex-paden-site next build",
+    "build:prod": "NEXT_PUBLIC_BASE_PATH=/alex-paden-site next build",
+    "build:custom": "NEXT_PUBLIC_BASE_PATH= next build",
     "preview": "npx serve@latest out",
     "lint": "next lint"
   },
